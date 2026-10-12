@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>企业工单管理系统</title>
+<style>
+:root{
+  --primary:#1f4e8c; --primary-dark:#163a6b; --primary-light:#2f6cb0;
+  --accent:#e8a13a; --bg:#f4f6fa; --card:#ffffff; --border:#e4e9f0;
+  --text:#26303e; --muted:#8a94a6; --white:#fff;
+  --red:#e2574c; --orange:#e8a13a; --blue:#3b82f6; --green:#2e9e5b; --purple:#8b5cf6; --gray:#6b7687; --cyan:#0ea5a4;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei","PingFang SC",-apple-system,Roboto,sans-serif;background:var(--bg);color:var(--text);}
+a{text-decoration:none;color:inherit}
+button{font-family:inherit;cursor:pointer;border:none}
+input,select,textarea{font-family:inherit;font-size:14px;color:var(--text)}
+
+/* ===== Login ===== */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,var(--primary-dark) 0%,var(--primary) 55%,var(--primary-light) 100%);padding:20px}
+.login-card{background:var(--white);border-radius:12px;padding:40px 36px;width:100%;max-width:400px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.login-brand{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.login-brand .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700}
+.login-brand h1{font-size:22px;color:var(--primary-dark)}
+.login-sub{font-size:13px;color:var(--muted);margin-bottom:24px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+.form-control{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;transition:.2s}
+.form-control:focus{outline:none;border-color:var(--primary-light);box-shadow:0 0 0 3px rgba(47,108,176,.15)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 18px;border-radius:8px;font-size:14px;transition:.2s}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:var(--primary-dark)}
+.btn-accent{background:var(--accent);color:#fff}
+.btn-ghost{background:#eef2f8;color:var(--text)}
+.btn-danger{background:#fdecea;color:var(--red)}
+.btn-sm{padding:5px 12px;font-size:13px}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.login-tip{font-size:12px;color:var(--muted);margin-top:18px;text-align:center;line-height:1.8}
+
+/* ===== Layout ===== */
+.app{display:flex;min-height:100vh}
+.sidebar{width:230px;background:linear-gradient(180deg,var(--primary-dark),var(--primary));color:#fff;display:flex;flex-direction:column;position:fixed;top:0;bottom:0;left:0;z-index:20;transition:transform .3s}
+.side-brand{display:flex;align-items:center;gap:10px;padding:18px 18px;border-bottom:1px solid rgba(255,255,255,.12)}
+.side-brand .logo{width:34px;height:34px;border-radius:8px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700}
+.side-brand span{font-size:15px;font-weight:600}
+.nav{margin-top:12px;flex:1;overflow-y:auto;padding:0 10px}
+.nav-item{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:8px;color:rgba(255,255,255,.82);cursor:pointer;font-size:14px;margin-bottom:4px;transition:.2s}
+.nav-item:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-item.active{background:rgba(255,255,255,.2);color:#fff;font-weight:600}
+.nav-icon{width:20px;text-align:center}
+.side-foot{padding:14px;border-top:1px solid rgba(255,255,255,.12)}
+.user-mini{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px}
+.user-mini .ua{font-size:13px}
+.user-mini .rr{font-size:11px;color:rgba(255,255,255,.7)}
+.logout-btn{width:100%;background:rgba(255,255,255,.12);color:#fff;padding:8px;border-radius:8px;font-size:13px}
+.logout-btn:hover{background:rgba(255,255,255,.22)}
+.main{margin-left:230px;flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{background:var(--card);border-bottom:1px solid var(--border);height:58px;display:flex;align-items:center;padding:0 24px;justify-content:space-between;position:sticky;top:0;z-index:15}
+.topbar h2{font-size:17px}
+.burger{display:none;font-size:22px;cursor:pointer;background:none;color:var(--text);margin-right:14px}
+.content{padding:24px;flex:1}
+.mask{display:none;position:fixed;inset:0;background:rgba(15,23,42,.4);z-index:19}
+
+/* ===== Cards / Grid ===== */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:18px}
+.card-title{font-size:15px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;margin-bottom:18px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;position:relative;overflow:hidden}
+.stat .num{font-size:28px;font-weight:700;line-height:1.2}
+.stat .lbl{font-size:13px;color:var(--muted);margin-top:4px}
+.stat .dot{position:absolute;right:-10px;bottom:-10px;width:70px;height:70px;border-radius:50%;opacity:.12}
+.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.bar-item{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:13px}
+.bar-item .lab{width:90px;color:var(--muted);flex-shrink:0}
+.bar-track{flex:1;height:22px;background:#eef2f8;border-radius:6px;overflow:hidden;position:relative}
+.bar-fill{height:100%;border-radius:6px;display:flex;align-items:center;padding-left:8px;color:#fff;font-size:12px;white-space:nowrap;min-width:24px;transition:width .5s}
+
+/* ===== Table ===== */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:720px}
+th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+th{background:#f7f9fc;color:var(--muted);font-weight:600;font-size:13px}
+tbody tr:hover{background:#f8faff}
+.badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600}
+.badge-green{background:#e6f5ec;color:var(--green)}
+.badge-blue{background:#e8f0fe;color:var(--blue)}
+.badge-orange{background:#fdf0dd;color:var(--orange)}
+.badge-red{background:#fdebea;color:var(--red)}
+.badge-cyan{background:#e0f5f5;color:var(--cyan)}
+.badge-purple{background:#f1e9fe;color:var(--purple)}
+.badge-gray{background:#eef1f5;color:var(--gray)}
+.empty{padding:40px;text-align:center;color:var(--muted)}
+.pager{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:14px;font-size:13px;color:var(--muted)}
+.pager button{background:#eef2f8;padding:5px 12px;border-radius:6px}
+.pager button:disabled{opacity:.4}
+
+/* ===== Filters ===== */
+.filter-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px}
+.filter-bar .form-control{width:auto;min-width:130px}
+
+/* ===== Modal ===== */
+.modal-mask{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:40;align-items:center;justify-content:center;padding:20px}
+.modal-mask.show{display:flex}
+.modal{background:var(--card);border-radius:12px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.modal-head h3{font-size:16px}
+.modal-body{padding:20px}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+.custom-field-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field-duo{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.customer-msg{padding:14px;background:#fdf3e3;border:1px solid #f2d9a9;color:#8a5a12;border-radius:8px;font-size:13px;margin-bottom:14px}
+
+/* ===== Detail ===== */
+.detail-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:8px}
+.detail-no{color:var(--muted);font-size:13px}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.kv-item .k{font-size:12px;color:var(--muted);margin-bottom:4px}
+.kv-item .v{font-size:14px;font-weight:600}
+.timeline-actions{display:flex;flex-wrap:wrap;gap:10px}
+.img-file{display:block;max-width:100%;border:1px solid var(--border);border-radius:8px;margin-top:6px}
+
+/* ===== Upload list ===== */
+.file-list{list-style:none}
+.file-list li{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;font-size:13px}
+.file-list a{color:var(--primary);flex:1}
+.msg-box{padding:12px;border-radius:8px;margin-bottom:14px;font-size:13px;display:none}
+.msg-box.ok{display:block;background:#e6f5ec;color:var(--green)}
+.msg-box.err{display:block;background:#fdebea;color:var(--red)}
+
+@media (max-width:900px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}
+  .burger{display:block}
+  .content{padding:14px}
+  .chart-row{grid-template-columns:1fr}
+}
+@media (max-width:520px){
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+  .custom-field-grid,.field-duo{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<!-- 登录页 -->
+<div id="loginView" class="login-wrap" style="display:none">
+  <form class="login-card" onsubmit="doLogin(event)">
+    <div class="login-brand"><div class="logo">单</div><h1>企业工单系统</h1></div>
+    <div class="login-sub">Work Order Management System</div>
+    <div class="msg-box" id="loginMsg"></div>
+    <div class="form-group"><label>用户名</label><input class="form-control" id="loginUser" placeholder="请输入用户名" autocomplete="username"></div>
+    <div class="form-group"><label>密码</label><input class="form-control" id="loginPass" type="password" placeholder="请输入密码" autocomplete="current-password"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:6px" id="loginBtn">登 录</button>
+    <div class="login-tip">默认账号：admin / admin123 · manager / manager123<br>agent1 / agent123 · customer / customer123</div>
+  </form>
+</div>
+
+<!-- 主应用 -->
+<div id="appView" style="display:none">
+  <div class="mask" id="mask" onclick="toggleSidebar()"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="side-brand"><div class="logo">单</div><span>企业工单系统</span></div>
+    <nav class="nav">
+      <div class="nav-item" data-nav="dashboard" onclick="navigate('dashboard')"><span class="nav-icon">📊</span>数据看板</div>
+      <div class="nav-item" data-nav="workorders" onclick="navigate('workorders')"><span class="nav-icon">📋</span>工单管理</div>
+      <div class="nav-item" id="nav-typemanage" data-nav="types" onclick="navigate('types')" style="display:none"><span class="nav-icon">🏷️</span>工单类型</div>
+      <div class="nav-item" id="nav-usermanage" data-nav="users" onclick="navigate('users')" style="display:none"><span class="nav-icon">👥</span>用户管理</div>
+      <div class="nav-item" id="nav-logs" data-nav="logs" onclick="navigate('logs')" style="display:none"><span class="nav-icon">🧾</span>操作日志</div>
+    </nav>
+    <div class="side-foot">
+      <div class="user-mini">
+        <div class="user-avatar" id="miniAvatar">U</div>
+        <div><div class="ua" id="miniName">—</div><div class="rr" id="miniRole">—</div></div>
+      </div>
+      <button class="logout-btn" onclick="logout()">退出登录</button>
+    </div>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <div style="display:flex;align-items:center">
+        <button class="burger" onclick="toggleSidebar()">☰</button>
+        <h2 id="pageTitle">数据看板</h2>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openCreate()" id="topCreateBtn">＋ 新建工单</button>
+    </header>
+    <main class="content" id="content"></main>
+  </div>
+</div>
+
+<!-- 新建/编辑工单 Modal -->
+<div class="modal-mask" id="createModal">
+  <div class="modal">
+    <div class="modal-head"><h3>新建工单</h3><button class="btn btn-sm btn-ghost" onclick="closeCreate()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>工单标题 *</label><input class="form-control" id="woTitle" placeholder="简要描述问题"></div>
+      <div class="form-group"><label>工单类型</label><select class="form-control" id="woType"></select></div>
+      <div class="custom-field-grid" id="customFields"></div>
+      <div class="field-duo">
+        <div class="form-group"><label>优先级</label><select class="form-control" id="woPriority">
+          <option value="LOW">低</option><option value="MEDIUM" selected>中</option>
+          <option value="HIGH">高</option><option value="URGENT">紧急</option></select></div>
+        <div class="form-group"><label>分配模式</label><select class="form-control" id="woAssignMode" onchange="toggleAssignSelect()">
+          <option value="AUTO" selected>自动分配</option><option value="MANUAL">手动分配</option></select></div>
+      </div>
+      <div class="form-group" id="assigneeGroup" style="display:none"><label>处理人</label><select class="form-control" id="woAssignee"></select></div>
+      <div class="form-group"><label>详细描述</label><textarea class="form-control" id="woDesc" rows="3" placeholder="补充问题细节、影响范围等"></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeCreate()">取消</button>
+      <button class="btn btn-primary" onclick="submitCreate()">提交工单</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================= 工具 ================= */
+const $ = s => document.querySelector(s);
+const tpl = (s, o) => s.replace(/\{(\w+)\}/g, (m, k) => o[k] ?? '');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtTime = s => s ? ((''+s).replace('T',' ').slice(0,19)) : '—';
+const fmtSize = n => { if(n==null) return '—'; if(n<1024) return n+'B'; if(n<1048576) return (n/1024).toFixed(1)+'KB'; return (n/1048576).toFixed(1)+'MB'; };
+
+const STATUS = {PENDING:{l:'待处理',c:'badge-orange'},PROCESSING:{l:'处理中',c:'badge-blue'},RESOLVED:{l:'已解决',c:'badge-green'},CLOSED:{l:'已关闭',c:'badge-cyan'},CANCELLED:{l:'已取消',c:'badge-red'}};
+const PRIO = {LOW:{l:'低',c:'badge-green'},MEDIUM:{l:'中',c:'badge-orange'},HIGH:{l:'高',c:'badge-red'},URGENT:{l:'紧急',c:'badge-purple'}};
+const ROLE_NAMES = {ADMIN:'系统管理员',MANAGER:'业务主管',AGENT:'处理人员',CUSTOMER:'客户'};
+function statusBadge(s){const x=STATUS[s]||{l:s,c:'badge-gray'};return `<span class="badge ${x.c}">${x.l}</span>`;}
+function prioBadge(p){const x=PRIO[p]||{l:p,c:'badge-gray'};return `<span class="badge ${x.c}">${x.l}</span>`;}
+
+function currentUser(){ try{ return JSON.parse(localStorage.getItem('currentUser')); }catch(e){ return null; } }
+
+/* ================= API 封装 ================= */
+async function api(path, opts = {}){
+  const headers = {}; const body = opts.body;
+  if(body instanceof FormData){ /* form */ }
+  else headers['Content-Type'] = 'application/json';
+  const token = localStorage.getItem('token');
+  if(token) headers['Authorization'] = 'Bearer '+token;
+  const conf = {method: opts.method || 'GET', headers, body: body instanceof FormData ? body : (body!==undefined ? JSON.stringify(body) : undefined)};
+  const res = await fetch('/api'+path, conf);
+  if(res.status === 401){ toLogin(); throw new Error('未认证'); }
+  if(res.status === 204) return null;
+  const ct = res.headers.get('content-type')||'';
+  const data = ct.includes('json') ? await res.json() : await res.text();
+  if(res.status >= 400){ throw new Error(data && data.message ? data.message : ('请求失败('+res.status+')')); }
+  return data;
+}
+
+/* ================= 认证 ================= */
+function toLogin(){ localStorage.removeItem('token'); localStorage.removeItem('currentUser'); showLogin(); }
+function showLogin(){ $('#appView').style.display='none'; $('#loginView').style.display='flex'; }
+async function doLogin(e){
+  e.preventDefault();
+  const u=$('#loginUser').value.trim(), p=$('#loginPass').value;
+  if(!u||!p) return showMsg('#loginMsg','请输入用户名和密码','err');
+  $('#loginBtn').disabled=true;
+  try{
+    const r = await api('/auth/login', {method:'POST', body:{username:u, password:p}});
+    localStorage.setItem('token', r.data.token);
+    localStorage.setItem('currentUser', JSON.stringify(r.data));
+    $('#loginMsg').style.display='none';
+    enterApp();
+  }catch(err){ showMsg('#loginMsg', err.message, 'err'); }
+  $('#loginBtn').disabled=false;
+}
+function showMsg(sel, text, type){ const m=$(sel); m.textContent=text; m.className='msg-box '+(type||'ok'); m.style.display='block'; }
+/* 通用业务提示弹窗（用于越权/操作被拒绝等场景） */
+function showAlert(title, msg){
+  let m=document.getElementById('alertModal');
+  if(m) m.remove();
+  m=document.createElement('div');
+  m.className='modal-mask show'; m.id='alertModal';
+  m.innerHTML=`
+    <div class="modal" style="max-width:420px">
+      <div class="modal-head"><h3>${esc(title||'提示')}</h3></div>
+      <div class="modal-body"><p style="margin:0;white-space:pre-wrap">${esc(msg)}</p></div>
+      <div class="modal-foot"><button class="btn" onclick="this.closest('.modal-mask').remove()">知道了</button></div>
+    </div>`;
+  document.body.appendChild(m);
+}
+function logout(){ localStorage.removeItem('token'); localStorage.removeItem('currentUser'); toLogin(); }
+
+function enterApp(){
+  $('#loginView').style.display='none'; $('#appView').style.display='block';
+  const u = currentUser();
+  $('#miniName').textContent = u.realName || u.username;
+  $('#miniAvatar').textContent = (u.realName||u.username||'U').charAt(0).toUpperCase();
+  $('#miniRole').textContent = ROLE_NAMES[u.role] || u.role;
+  const role = u.role;
+  $('#nav-typemanage').style.display = (role==='ADMIN'||role==='MANAGER') ? '' : 'none';
+  $('#nav-usermanage').style.display = (role==='ADMIN') ? '' : 'none';
+  $('#nav-logs').style.display = (role==='ADMIN'||role==='MANAGER') ? '' : 'none';
+  const canCreate = role==='ADMIN'||role==='MANAGER'||role==='AGENT'||role==='CUSTOMER';
+  $('#topCreateBtn').style.display = canCreate ? '' : 'none';
+  if(!location.hash) location.hash = '#/dashboard';
+  renderRoute();
+}
+function toggleSidebar(){ $('#sidebar').classList.toggle('open'); $('#mask').style.display = $('#sidebar').classList.contains('open')?'block':'none'; }
+
+/* ================= 路由 ================= */
+const TITLES = {dashboard:'数据看板',workorders:'工单管理',types:'工单类型',users:'用户管理',logs:'操作日志',detail:'工单详情'};
+window.addEventListener('hashchange', renderRoute);
+function renderRoute(){
+  const hash = location.hash || '#/dashboard';
+  const parts = hash.replace('#/','').split('/');
+  const view = parts[0] || 'dashboard';
+  const id = parts[1];
+  $('#pageTitle').textContent = TITLES[view] || '工单系统';
+  const navs=document.querySelectorAll('.nav-item');
+  navs.forEach(n=>n.classList.remove('active'));
+  const act=document.querySelector(`.nav-item[data-nav="${view}"]`); if(act) act.classList.add('active');
+  if(window.innerWidth<=900){ $('#sidebar').classList.remove('open'); $('#mask').style.display='none'; }
+  if(view==='dashboard') renderDashboard();
+  else if(view==='workorders') renderWorkOrders();
+  else if(view==='types') renderTypes();
+  else if(view==='users') renderUsers();
+  else if(view==='logs') renderLogs();
+  else if(view==='workorder' && id) renderDetail(id);
+  else { location.hash='#/dashboard'; }
+}
+function navigate(v){ const c=currentUser(); if(v==='users'&&c.role!=='ADMIN'){return;} if((v==='types'||v==='logs')&&c.role!=='ADMIN'&&c.role!=='MANAGER'){return;} location.hash='#/'+v; }
+
+/* ================= 看板 ================= */
+async function renderDashboard(){
+  const c=currentUser();
+  if(c.role!=='ADMIN'&&c.role!=='MANAGER'){ location.hash='#/workorders'; return; }
+  $('#content').innerHTML='<div class="empty">加载中...</div>';
+  try{
+    const [ov, byType, byDay, byAgent, byMode] = await Promise.all([
+      api('/statistics/overview'), api('/statistics/by-type'), api('/statistics/by-day?days=7'), api('/statistics/by-agent'), api('/statistics/assign-mode')
+    ]);
+    const d=ov.data;
+    const C={primary:'#2f6cb0',orange:'#e8a13a',blue:'#3b82f6',green:'#2e9e5b',cyan:'#0ea5a4',red:'#e2574c'};
+    const statCards=[
+      {n:d.total,l:'工单总数',c:C.primary},
+      {n:d.pending,l:'待处理',c:C.orange},
+      {n:d.processing,l:'处理中',c:C.blue},
+      {n:d.resolved,l:'已解决',c:C.green},
+      {n:d.closed,l:'已关闭',c:C.cyan},
+      {n:d.cancelled,l:'已取消',c:C.red}
+    ];
+    const cardHtml=statCards.map(s=>
+      `<div class="stat"><div class="num" style="color:${s.c}">${s.n}</div><div class="lbl">${s.l}</div><div class="dot" style="background:${s.c}"></div></div>`).join('');
+    $('#content').innerHTML=tpl(`
+      <div class="stat-grid">${cardHtml}</div>
+      <div class="chart-row">
+        <div class="card"><div class="card-title">近 7 日新增工单</div>${bars(byDay.data)}</div>
+        <div class="card"><div class="card-title">各类型分布</div>${bars(byType.data)}</div>
+        <div class="card"><div class="card-title">处理人员负载</div>${bars(byAgent.data)}</div>
+        <div class="card"><div class="card-title">分配模式占比</div>${bars(byMode.data)}</div>
+      </div>`, {});
+  }catch(e){ $('#content').innerHTML=`<div class="card"><div class="empty">${esc(e.message)}</div></div>`; }
+}
+function bars(map){
+  const entries = Object.entries(map||{}); if(!entries.length) return '<div class="empty">暂无数据</div>';
+  const max = Math.max(...entries.map(e=>e[1]||0),1);
+  const colors=['#2f6cb0','#2e9e5b','#e8a13a','#e2574c','#8b5cf6','#0ea5a4','#6b7687','#3b82f6'];
+  return entries.map((e,i)=>`
+    <div class="bar-item"><span class="lab">${esc(e[0])}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.max(4, (e[1]/max)*100)}%;background:${colors[i%colors.length]}">${e[1]}</div></div>
+    </div>`).join('');
+}
+</script>
+<script>
+/* ================= 工单 ================= */
+let woPage=0, woSize=8, woTotal=0, woFilter={};
+async function renderWorkOrders(){
+  $('#content').innerHTML=tpl(`
+    <div class="card">
+      <div class="filter-bar">
+        <input class="form-control" id="fKeyword" placeholder="关键字" style="flex:1">
+        <select class="form-control" id="fStatus" onchange="applyFilter()"><option value="">全部状态</option>${opts(STATUS)}</select>
+        <select class="form-control" id="fPriority" onchange="applyFilter()"><option value="">全部优先级</option>${opts(PRIO)}</select>
+        <select class="form-control" id="fType" onchange="applyFilter()"></select>
+        <button class="btn btn-primary" onclick="applyFilter()">查询</button>
+        <button class="btn btn-ghost" onclick="resetFilter()">重置</button>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>单号</th><th>标题</th><th>类型</th><th>优先级</th><th>状态</th><th>创建人</th><th>处理人</th><th>分配方式</th><th>创建时间</th><th>操作</th></tr></thead>
+        <tbody id="woTbody"></tbody>
+      </table></div>
+      <div class="pager"><span id="woInfo">共 0 条</span>
+        <button onclick="woPrev()">上一页</button><span id="woPage">1/1</span><button onclick="woNext()">下一页</button>
+      </div>
+    </div>`);
+  await loadTypes();
+  await loadWO();
+  await refreshWoData();
+}
+function opts(map){ return Object.entries(map||{}).map(([k,v])=>`<option value="${k}">${v.l}</option>`).join(''); }
+function applyFilter(){
+  woFilter={
+    keyword:$('#fKeyword').value.trim(), status:$('#fStatus').value, priority:$('#fPriority').value, typeId:$('#fType').value
+  }; woPage=0; loadWO();
+}
+function resetFilter(){ woPage=0; woFilter={}; renderWorkOrders(); }
+function woPrev(){ if(woPage>0){woPage--; loadWO();} }
+function woNext(){ if(woPage< Math.ceil(woTotal/woSize)-1){woPage++; loadWO();} }
+async function loadWO(){
+  const params = new URLSearchParams({page:woPage, size:woSize});
+  if(woFilter.keyword) params.set('keyword',woFilter.keyword);
+  if(woFilter.status) params.set('status',woFilter.status);
+  if(woFilter.priority) params.set('priority',woFilter.priority);
+  if(woFilter.typeId) params.set('typeId',woFilter.typeId);
+  const r = await api('/workorders?'+params.toString());
+  const d=r.data; woTotal=d.totalElements;
+  $('#woInfo').textContent=`共 ${d.totalElements} 条`;
+  $('#woPage').textContent=`${d.page+1}/${Math.max(1,d.totalPages)}`;
+  const role=currentUser().role;
+  const rows=d.content.map(o=>
+    `<tr>
+      <td>${esc(o.orderNo)}</td><td>${esc(o.title)}</td><td>${esc(o.typeName)}</td>
+      <td>${prioBadge(o.priority)}</td><td>${statusBadge(o.status)}</td>
+      <td>${esc(o.creatorName)}</td><td>${esc(o.assigneeName||'未分配')}</td>
+      <td><span class="badge ${o.assignMode==='AUTO'?'badge-blue':'badge-gray'}">${o.assignMode==='AUTO'?'自动':'手动'}</span></td>
+      <td>${fmtTime(o.createdAt)}</td>
+      <td><button class="btn btn-sm btn-primary" onclick="location.hash='#/workorder/'+${o.id}">查看</button></td>
+    </tr>`).join('');
+  $('#woTbody').innerHTML = rows || `<tr><td colspan="10"><div class="empty">暂无工单</div></td></tr>`;
+}
+async function refreshWoData(){
+  // 刷新同页（若该页已空则回退）
+  if(woTotal>0 && Math.ceil(woTotal/woSize)-1 < woPage){ woPage=Math.max(0,Math.ceil(woTotal/woSize)-1); loadWO(); }
+}
+
+let ALL_TYPES=[];
+async function loadTypes(){
+  const r=await api('/types?enabledOnly=true'); ALL_TYPES=r.data;
+  const first=r.data[0];
+  $('#fType').innerHTML=`<option value="">全部类型</option>`+r.data.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('');
+  try{ $('#woType').innerHTML=r.data.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join(''); onTypeChange(); }catch(e){}
+}
+function onTypeChange(){
+  const box=$('#customFields'); if(!box) return;
+  const id=Number($('#woType').value);
+  const type=ALL_TYPES.find(t=>t.id===id);
+  renderCustomFields(type);
+}
+function openCreate(){
+  const role=currentUser().role;
+  if(role!=='ADMIN'&&role!=='MANAGER'&&role!=='AGENT'&&role!=='CUSTOMER'){ return; }
+  $('#createModal').classList.add('show');
+  $('#woTitle').value=''; $('#woDesc').value=''; $('#woAssignee').innerHTML='';
+  $('#assigneeGroup').style.display='none'; $('#woAssignMode').value='AUTO';
+  api('/types?enabledOnly=true').then(r=>{
+    ALL_TYPES=r.data; $('#woType').innerHTML=r.data.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('');
+    onTypeChange();
+  });
+  loadAgents();
+}
+function closeCreate(){ $('#createModal').classList.remove('show'); }
+function toggleAssignSelect(){ $('#assigneeGroup').style.display = $('#woAssignMode').value==='MANUAL' ? '' : 'none'; }
+function renderCustomFields(type){
+  const box=$('#customFields'); if(!box) return;
+  box.innerHTML=''; if(!type) return;
+  let fields=[]; try{ fields=JSON.parse(type.customFields||'[]'); }catch(e){ fields=[]; }
+  if(!fields.length){ return; }
+  fields.forEach(f=>{
+    if(f.type==='textarea'){
+      box.insertAdjacentHTML('beforeend',`<div style="grid-column:1/-1" class="form-group"><label>${esc(f.label)}${f.required?' *':''}</label><textarea class="form-control" data-field="${esc(f.field)}" style="grid-column:1/-1" rows="2"></textarea></div>`);
+    }else{
+      box.insertAdjacentHTML('beforeend',`<div class="form-group"><label>${esc(f.label)}${f.required?' *':''}</label><input class="form-control" data-field="${esc(f.field)}" placeholder="${esc(f.label)}"></div>`);
+    }
+  });
+}
+function bindWoTypeChange(){
+  const el=$('#woType'); if(el) el.addEventListener('change', onTypeChange);
+}
+async function loadAgents(){
+  try{ const r=await api('/users/role/AGENT'); $('#woAssignee').innerHTML=r.data.map(u=>`<option value="${u.id}">${esc(u.realName)}（${esc(u.username)}）</option>`).join(''); }catch(e){}
+}
+async function submitCreate(){
+  const title=$('#woTitle').value.trim(); if(!title) return alert('请填写标题');
+  const typeId=$('#woType').value;
+  const custom={};
+  document.querySelectorAll('#customFields [data-field]').forEach(el=>custom[el.getAttribute('data-field')]=el.value);
+  const body={
+    title,
+    description:$('#woDesc').value.trim(),
+    priority:$('#woPriority').value,
+    typeId: typeId?Number(typeId):null,
+    customData: Object.keys(custom).length?JSON.stringify(custom):null,
+    assignMode:$('#woAssignMode').value,
+    assigneeId: $('#woAssignMode').value==='MANUAL' ? (Number($('#woAssignee').value)||null) : null
+  };
+  try{ await api('/workorders',{method:'POST',body});
+    closeCreate(); alert('工单创建成功'); location.hash='#/workorders'; renderWorkOrders();
+  }catch(e){ alert(e.message); }
+}
+
+/* ================= 工单详情 ================= */
+async function renderDetail(id){
+  $('#content').innerHTML='<div class="card"><div class="empty">加载中...</div></div>';
+  try{
+    const r=await api('/workorders/'+id); const d=r.data; const o=d.workOrder; const me=currentUser();
+    const canAssign = me.role==='ADMIN'||me.role==='MANAGER';
+    const canStatus = me.role==='ADMIN'||me.role==='MANAGER'||me.role==='AGENT';
+    const actions=d.allowedTransitions.map(t=>`<button class="btn btn-sm ${t.to==='CLOSED'?'btn-accent':'btn-primary'}" onclick="doTransition(${o.id},'${t.to}')">${esc(t.label)}</button>`).join('');
+    $('#content').innerHTML=tpl(`
+      <div class="card">
+        <div class="detail-head">
+          <div><div class="detail-no">${esc(o.orderNo)} · ${fmtTime(o.createdAt)} 创建</div>
+          <h3 style="margin-top:4px">${esc(o.title)}</h3></div>
+          <div style="display:flex;gap:8px;align-items:center">${statusBadge(o.status)} ${prioBadge(o.priority)}</div>
+        </div>
+        <div class="kv" style="margin-top:14px">
+          <div class="kv-item"><div class="k">工单类型</div><div class="v">${esc(o.typeName||'—')}</div></div>
+          <div class="kv-item"><div class="k">创建人</div><div class="v">${esc(o.creatorName)}</div></div>
+          <div class="kv-item"><div class="k">处理人</div><div class="v">${esc(o.assigneeName||'未分配')}</div></div>
+          <div class="kv-item"><div class="k">分配方式</div><div class="v">${o.assignMode==='AUTO'?'自动分配':'手动分配'}</div></div>
+          <div class="kv-item"><div class="k">分配时间</div><div class="v">${fmtTime(o.assignedAt)}</div></div>
+          <div class="kv-item"><div class="k">解决/关闭时间</div><div class="v">${fmtTime(o.resolvedAt)} / ${fmtTime(o.closedAt)}</div></div>
+        </div>
+        <div style="margin-top:16px"><div class="k" style="font-size:12px;color:var(--muted)">详细描述</div>
+          <p style="margin-top:6px;white-space:pre-wrap;line-height:1.7">${esc(o.description||'（无描述）')}</p></div>
+        ${o.customData?`<div style="margin-top:12px"><div class="k" style="font-size:12px;color:var(--muted)">自定义字段</div><div style="margin-top:6px;font-size:13px">${customKV(o.customData)}</div></div>`:''}
+      </div>
+      <div class="card" id="opCard">
+        <div class="card-title">处理操作</div>
+        <div class="timeline-actions">
+          ${actions||'<span class="badge badge-gray">当前状态无可执行操作</span>'}
+          ${canAssign?`<button class="btn btn-sm btn-ghost" onclick="autoAssign(${o.id})">自动分配</button>
+          <select class="form-control" id="manualAssignee" style="width:auto;min-width:140px"></select>
+          <button class="btn btn-sm btn-accent" onclick="manualAssign(${o.id})">指定处理人</button>`:''}
+        </div>
+      </div>
+      <div class="chart-row">
+        <div class="card">
+          <div class="card-title">评论回复</div>
+          <div id="commentList"></div>
+          <div style="margin-top:12px"><textarea class="form-control" id="commentText" rows="2" placeholder="发表评论"></textarea>
+          <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="addComment(${o.id})">发表评论</button></div>
+        </div>
+        <div class="card">
+          <div class="card-title">附件</div>
+          <ul class="file-list" id="attachList"></ul>
+          <div style="margin-top:12px">
+            <input type="file" id="attachFile" class="form-control" style="padding:8px">
+            <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="uploadAttach(${o.id})">上传附件</button>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:20px">
+        <button class="btn btn-ghost" onclick="location.hash='#/workorders'">← 返回列表</button>
+      </div>
+    `, {});
+    // 评论
+    const cs=d.comments.map(c=>`
+      <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="font-size:13px"><b>${esc(c.authorName)}</b> <span style="color:var(--muted)">${fmtTime(c.createdAt)}</span></div>
+        <p style="margin-top:4px;font-size:14px;white-space:pre-wrap">${esc(c.content)}</p>
+      </div>`).join('');
+    $('#commentList').innerHTML=cs||'<div class="empty">暂无评论</div>';
+    // 附件
+    $('#attachList').innerHTML=d.attachments.map(a=>`
+      <li>📎 <a target="_blank" href="/api/workorders/${o.id}/attachments/${a.id}/download">${esc(a.fileName)}</a>
+      <span style="color:var(--muted)">${fmtSize(a.fileSize)} · ${fmtTime(a.createdAt)}</span></li>`).join('')||'<div class="empty">暂无附件</div>';
+    // 处理人下拉
+    if(canAssign){ api('/users/role/AGENT').then(r=>{ $('#manualAssignee').innerHTML=r.data.map(u=>`<option value="${u.id}">${esc(u.realName)}</option>`).join(''); }); }
+  }catch(e){ $('#content').innerHTML=`<div class="card"><div class="empty">${esc(e.message)}</div></div>`; }
+}
+function customKV(json){ let o={}; try{o=JSON.parse(json)}catch(e){} return Object.entries(o).map(([k,v])=>`<span class="badge badge-gray">${esc(k)}：${esc(v)}</span>&nbsp;`).join('')||'—'; }
+async function doTransition(id,to){ try{ await api('/workorders/'+id+'/status',{method:'POST',body:{status:to}}); renderDetail(id);}catch(e){showAlert('操作失败',e.message);} }
+async function addComment(id){ const t=$('#commentText').value.trim(); if(!t)return; try{ await api('/workorders/'+id+'/comments',{method:'POST',body:{content:t}}); renderDetail(id);}catch(e){showAlert('操作失败',e.message);} }
+async function autoAssign(id){ try{ await api('/workorders/'+id+'/assign',{method:'POST',body:{assigneeId:null}}); renderDetail(id);}catch(e){showAlert('操作失败',e.message);} }
+async function manualAssign(id){ const v=$('#manualAssignee').value; if(!v)return showAlert('提示','请选择处理人'); try{ await api('/workorders/'+id+'/assign',{method:'POST',body:{assigneeId:Number(v)}}); renderDetail(id);}catch(e){showAlert('操作失败',e.message);} }
+async function uploadAttach(id){ const f=$('#attachFile').files[0]; if(!f)return showAlert('提示','请选择文件'); const fd=new FormData(); fd.append('file',f); try{ await api('/workorders/'+id+'/attachments',{method:'POST',body:fd}); $('#attachFile').value=''; renderDetail(id);}catch(e){showAlert('操作失败',e.message);} }
+</script>
+<script>
+/* ================= 用户管理 ================= */
+let uPage=0,uSize=8;
+async function renderUsers(){
+  $('#content').innerHTML=tpl(`
+    <div class="card">
+      <div class="card-title">用户列表 <button class="btn btn-primary btn-sm" onclick="openUserModal()">＋ 新增用户</button></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>ID</th><th>用户名</th><th>姓名</th><th>部门</th><th>联系方式</th><th>角色</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
+        <tbody id="userTbody"></tbody>
+      </table></div>
+      <div class="pager"><span id="uInfo">共 0 条</span>
+        <button onclick="uPrev()">上一页</button><span id="uPage">1/1</span><button onclick="uNext()">下一页</button></div>
+    </div>`);
+  loadUsers();
+}
+async function loadUsers(){
+  const r=await api('/users?page='+uPage+'&size='+uSize); const d=r.data;
+  $('#uInfo').textContent='共 '+d.totalElements+' 条'; $('#uPage').textContent=`${d.page+1}/${Math.max(1,d.totalPages)}`;
+  $('#userTbody').innerHTML=d.content.map(u=>`
+    <tr><td>${u.id}</td><td>${esc(u.username)}</td><td>${esc(u.realName)}</td><td>${esc(u.department||'—')}</td>
+      <td>${esc(u.phone||'')} ${esc(u.email||'')}</td>
+      <td>${[...(u.roles||[])].map(r=>`<span class="badge badge-blue" style="margin-right:4px">${ROLE_NAMES[r]||r}</span>`).join('')||'—'}</td>
+      <td>${u.enabled?`<span class="badge badge-green">启用</span>`:`<span class="badge badge-gray">禁用</span>`}</td>
+      <td>${fmtTime(u.createdAt)}</td>
+      <td>
+        <button class="btn btn-sm btn-ghost" onclick="openUserModal(${u.id})">编辑</button>
+        <button class="btn btn-sm ${u.enabled?'btn-danger':'btn-primary'}" onclick="toggleUser(${u.id},${u.enabled?'false':'true'})">${u.enabled?'禁用':'启用'}</button>
+        <button class="btn btn-sm btn-danger" onclick="delUser(${u.id})">删除</button>
+      </td></tr>`).join('') || '<tr><td colspan="9"><div class="empty">暂无用户</div></td></tr>';
+}
+function uPrev(){if(uPage>0){uPage--;loadUsers();}} function uNext(){const el=document.querySelector('#uPage');loadUsers();}
+async function openUserModal(id){
+  let data={};
+  if(id){ const r=await api('/users?page=0&size=100'); const u=r.data.content.find(x=>x.id===id); if(u) data=u; }
+  const rolesSel=`<div class="form-group"><label>角色 *</label>
+    <select class="form-control" id="umRoles" multiple size="4">
+      <option value="ADMIN">系统管理员</option><option value="MANAGER">业务主管</option>
+      <option value="AGENT">处理人员</option><option value="CUSTOMER">客户</option>
+    </select></div>`;
+  const m=document.createElement('div'); m.className='modal-mask show'; m.id='userModal';
+  m.innerHTML=`
+  <div class="modal">
+    <div class="modal-head"><h3>${id?'编辑用户':'新增用户'}</h3><button class="btn btn-sm btn-ghost" onclick="this.closest('.modal-mask').remove()">✕</button></div>
+    <div class="modal-body">
+      <div class="field-duo">
+        <div class="form-group"><label>用户名 *</label><input class="form-control" id="umUsername" value="${esc(data.username||'')}" ${id?'disabled':''}></div>
+        <div class="form-group"><label>${id?'新密码(留空不修改)':'密码 *'}</label><input class="form-control" id="umPassword" type="password"></div>
+      </div>
+      <div class="field-duo">
+        <div class="form-group"><label>姓名 *</label><input class="form-control" id="umRealName" value="${esc(data.realName||'')}"></div>
+        <div class="form-group"><label>部门</label><input class="form-control" id="umDept" value="${esc(data.department||'')}"></div>
+      </div>
+      <div class="field-duo">
+        <div class="form-group"><label>手机号</label><input class="form-control" id="umPhone" value="${esc(data.phone||'')}"></div>
+        <div class="form-group"><label>邮箱</label><input class="form-control" id="umEmail" value="${esc(data.email||'')}"></div>
+      </div>
+      ${id?'<div class="form-group"><label>启用状态</label><select class="form-control" id="umEnabled"><option value="true">启用</option><option value="false">禁用</option></select></div>':'<div style="display:none"><input id="umEnabled" value="true"></div>'}
+      ${rolesSel}
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="this.closest('.modal-mask').remove()">取消</button>
+      <button class="btn btn-primary" onclick="saveUser(${id||0})">保存</button>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+  if(data.roles){ [...(data.roles)].forEach(r=>{ const opt=[...m.querySelectorAll('#umRoles option')].find(o=>o.value===r); if(opt) opt.selected=true; }); }
+  m.querySelector('#umEnabled').value = String(data.enabled===undefined?true:data.enabled);
+}
+function saveUser(id){
+  const roles=[...$('#userModal #umRoles').selectedOptions].map(o=>o.value);
+  const body={ password:$('#umPassword').value||(id?undefined:''), realName:$('#umRealName').value, phone:$('#umPhone').value, email:$('#umEmail').value, department:$('#umDept').value, enabled:$('#umEnabled').value==='true', roles };
+  if(!id){ body.username=$('#umUsername').value; }
+  const url=id?'/users/'+id:'/users'; const method=id?'PUT':'POST';
+  api(url,{method,body}).then(()=>{ $('#userModal').remove(); loadUsers(); }).catch(e=>alert(e.message));
+}
+function toggleUser(id, en){ api('/users/'+id,{method:'PUT',body:{enabled:en}}).then(()=>loadUsers()).catch(e=>alert(e.message)); }
+function delUser(id){ if(!confirm('确认删除该用户？'))return; api('/users/'+id,{method:'DELETE'}).then(()=>{loadUsers();}).catch(e=>alert(e.message)); }
+
+/* ================= 工单类型 ================= */
+async function renderTypes(){
+  $('#content').innerHTML='<div class="card"><div class="empty">加载中...</div></div>';
+  try{
+    const r=await api('/types'); const list=r.data;
+    $('#content').innerHTML=tpl(`
+      <div class="card">
+        <div class="card-title">工单类型管理 <button class="btn btn-primary btn-sm" onclick="openTypeModal()">＋ 新增类型</button></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>编码</th><th>名称</th><th>描述</th><th>自定义字段</th><th>内置</th><th>启用</th><th>操作</th></tr></thead>
+          <tbody>${list.map(t=>`
+            <tr><td>${esc(t.code)}</td><td>${esc(t.name)}</td><td>${esc(t.description||'')}</td>
+              <td style="white-space:normal">${fieldPreview(t.customFields)}</td>
+              <td>${t.builtin?`<span class="badge badge-gray">内置</span>`:'<span class="badge badge-cyan">自建</span>'}</td>
+              <td>${t.enabled?`<span class="badge badge-green">启用</span>`:`<span class="badge badge-red">停用</span>`}</td>
+              <td>
+                <button class="btn btn-sm btn-ghost" onclick="openTypeModal(${t.id})">编辑</button>
+                <button class="btn btn-sm btn-danger" onclick="delType(${t.id})" ${t.builtin?'disabled':''}>删除</button>
+              </td></tr>`).join('')}</tbody>
+        </table></div>
+      </div>`);
+  }catch(e){ $('#content').innerHTML=`<div class="card"><div class="empty">${esc(e.message)}</div></div>`; }
+}
+function fieldPreview(cf){ try{ const a=JSON.parse(cf||'[]'); return a.map(f=>`<span class="badge badge-gray" style="margin:2px">${esc(f.label)}</span>`).join(' ')||'<span style="color:var(--muted)">—</span>'; }catch(e){ return '—'; } }
+async function openTypeModal(id){
+  let t=null; if(id){ const r=await api('/types'); t=r.data.find(x=>x.id===id); }
+  const m=document.createElement('div'); m.className='modal-mask show'; m.id='typeModal';
+  m.innerHTML=`
+  <div class="modal">
+    <div class="modal-head"><h3>${id?'编辑类型':'新增类型'}</h3><button class="btn btn-sm btn-ghost" onclick="this.closest('.modal-mask').remove()">✕</button></div>
+    <div class="modal-body">
+      <div class="field-duo">
+        <div class="form-group"><label>编码 *</label><input class="form-control" id="tmCode" value="${esc(t?t.code:'')}" ${t&&t.builtin?'disabled':''}></div>
+        <div class="form-group"><label>名称 *</label><input class="form-control" id="tmName" value="${esc(t?t.name:'')}"></div>
+      </div>
+      <div class="form-group"><label>描述</label><input class="form-control" id="tmDesc" value="${esc(t?t.description:'')}"></div>
+      <div class="form-group"><label>自定义字段 (JSON)</label>
+        <textarea class="form-control" id="tmFields" rows="4">${esc(t?t.customFields:'')}</textarea>
+        <div style="font-size:12px;color:var(--muted);margin-top:5px">示例：[{"field":"assetCode","label":"固定资产编号","type":"text","required":false}]</div></div>
+      ${id?`<div class="form-group"><label>启用状态</label><select class="form-control" id="tmEnabled"><option ${t.enabled?'selected':''} value="true">启用</option><option ${!t.enabled?'selected':''} value="false">停用</option></select></div>`:''}
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="this.closest('.modal-mask').remove()">取消</button>
+      <button class="btn btn-primary" onclick="saveType(${id||0})">保存</button>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+}
+function saveType(id){
+  const body={ code:$('#tmCode').value.trim(), name:$('#tmName').value.trim(), description:$('#tmDesc').value.trim(), customFields:$('#tmFields').value.trim() };
+  if(id){ body.enabled=$('#tmEnabled').value==='true'; }
+  if(!body.code||!body.name) return alert('编码和名称不能为空');
+  const url=id?'/types/'+id:'/types'; const method=id?'PUT':'POST';
+  api(url,{method,body}).then(()=>{ $('#typeModal').remove(); renderTypes(); }).catch(e=>alert(e.message));
+}
+function delType(id){ if(!confirm('确认删除该类型？'))return; api('/types/'+id,{method:'DELETE'}).then(()=>renderTypes()).catch(e=>alert(e.message)); }
+
+/* ================= 操作日志 ================= */
+async function renderLogs(){
+  $('#content').innerHTML='<div class="card"><div class="empty">加载中...</div></div>';
+  try{
+    const r=await api('/logs?page=0&size=50'); const d=r.data;
+    $('#content').innerHTML=tpl(`
+      <div class="card">
+        <div class="card-title">操作日志 <span style="font-size:13px;color:var(--muted);font-weight:400">共 ${d.totalElements} 条</span></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>时间</th><th>操作人</th><th>角色</th><th>模块</th><th>操作</th><th>详情</th></tr></thead>
+          <tbody>${d.content.map(l=>`
+            <tr><td>${fmtTime(l.createdAt)}</td><td>${esc(l.username||'—')}</td>
+              <td><span class="badge badge-blue">${ROLE_NAMES[l.role]||esc(l.role)}</span></td>
+              <td>${esc(l.module)}</td><td>${esc(l.operation)}</td><td style="white-space:normal;min-width:180px">${esc(l.detail||'—')}</td></tr>`).join('')}</tbody>
+        </table></div>
+      </div>`);
+  }catch(e){ $('#content').innerHTML=`<div class="card"><div class="empty">${esc(e.message)}</div></div>`; }
+}
+</script>
+<script>
+/* ================= 启动 ================= */
+(function init(){
+  bindWoTypeChange();
+  if(localStorage.getItem('token')){ enterApp(); } else { showLogin(); $('#loginUser').focus(); }
+})();
+</script>
+</body>
+</html>
